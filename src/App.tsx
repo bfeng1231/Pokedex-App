@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import helpers from './helpers'
 
 interface typeInterface {
     gender: string,
@@ -12,9 +13,9 @@ function App() {
     const [results, setResults] = useState<any>({})
     const [settings, setSettings] = useState<typeInterface>({gender: 'male', shiny: false, direction: 'front'})
     const [isLoading, setIsLoading] = useState(true)
+    const [evolution, setEvolution] = useState<any>({})
 
-    //https://pokeapi.co/api/v2/pokemon/{id or name}/
-    const fetchPokemon = async (query: string) => {
+    /* const fetchPokemon = async (query: string) => {
         setIsLoading(true)
         try {
             const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${query}`, {method: 'GET'});
@@ -23,6 +24,7 @@ function App() {
                 setSettings({gender: 'male', shiny: false, direction: 'front'})
                 setResults(data);              
                 setIsLoading(false);
+                //fetchEvolution('tes', {test: ()=>console.log('func')})
                 return console.log(data); 
             }
             setIsLoading(false);                             
@@ -33,10 +35,38 @@ function App() {
             console.log('API is down');
         }
         
+    } */
+
+    const fetchData = async (query: string, stateFunctions: any) => {
+        try {
+            const res = await fetch(query, {method: 'GET'});
+            if (res.status === 200) {
+                const data = await res.json();
+                stateFunctions(data);
+                return console.log(data)
+            }                             
+            return console.log('not found');       
+        }
+        catch {
+            console.log('API is down');
+        }
+    }
+
+    const getPokemon = (search: string) => {
+        setIsLoading(true);
+        // Start fetch chain (Basic info url -> Species info url -> Evolution chain url).
+        fetchData(`https://pokeapi.co/api/v2/pokemon/${search}`, (data: any) => {
+            setSettings({gender: 'male', shiny: false, direction: 'front'});
+            setResults(data);              
+            fetchData(data.species.url, (data: any) => fetchData(data.evolution_chain.url, (data: any) => {
+                setEvolution(data);
+                setIsLoading(false); 
+            }))
+        });
     }
 
     useEffect(() => {
-        fetchPokemon('pikachu')
+        getPokemon('pikachu')
     }, [])
 
     const imageSelector = (type: typeInterface) => {
@@ -91,13 +121,14 @@ function App() {
                 <input type='textbox' onChange={event => setInput(event.target.value)} placeholder='Please enter the name of a Pokémon.'/>
                 <button onClick={event => {
                     event.preventDefault();
-                    fetchPokemon(input);
+                    /* fetchPokemon(input); */
+                    getPokemon(input)
                 }}>Search</button>            
             </div>
             {isLoading ? <div></div>: 
             <div>
                 <div className='image'>
-                    <h2>{results.species.name}</h2>             
+                    <h2>#{results.id} {results.species.name}</h2>             
                     {imageSelector(settings)}
                     <div>
                         {results.sprites.front_female !== null ?
@@ -111,7 +142,35 @@ function App() {
                         }}>Shiny</button>
                     </div>
                 </div>
-                
+                <div>
+                    <div>
+                        {results.types.map((elem: any) => <img src={helpers.getType(elem.type.name)} alt='' key={elem.type.name} /> )}
+                    </div>
+                    <div>
+                        <div>Height: {results.height * 10} cm</div>
+                        <div>Weight: {results.weight / 10} kg</div>
+                    </div>
+                    <div>
+                        <div>Evolution</div>
+                        <div>{evolution.chain.species.name}</div>
+                        {evolution.chain.evolves_to.length === 0 ? 
+                            <div></div> : 
+                            evolution.chain.evolves_to.map((elem: any) => 
+                                <div>
+                                    <div>{elem.species.name}</div>
+                                    {elem.evolves_to.length === 0 ? <div></div> :
+                                        elem.evolves_to.map((elem: any) => 
+                                            <div>
+                                                {elem.species.name}
+                                            </div> 
+                                        )
+                                    }
+                                </div>
+                            )
+                        }  
+                    </div> 
+                       
+                </div>
                            
             </div>
             }
