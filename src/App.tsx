@@ -115,6 +115,26 @@ function App() {
             return setSettings({...settings, direction: 'front'}) 
     }
 
+    const genderSelector = (gender: string) => {
+        if (gender === 'male') {
+            return <div style={{color: 'blue'}}>&#9703;</div>
+        }
+        else {
+            return <div style={{color: 'red'}}>&#9704;</div>
+        }
+    }
+
+    const idFormat = (id: number) => {
+        let display = id.toString()
+        let length = display.length;
+        if (length === 2)
+            return '0' + display
+        else if (length === 1)
+            return '00' + display
+        else
+            return
+    }
+
     return (
         <div className="App">
             <div>
@@ -125,53 +145,73 @@ function App() {
                     getPokemon(input)
                 }}>Search</button>            
             </div>
-            {isLoading ? <div></div>: 
+            {isLoading ? <div></div>:
             <div>
-                <div className='image'>
-                    <h2>#{results.id} {results.species.name}</h2>             
-                    {imageSelector(settings)}
-                    <div>
-                        {results.sprites.front_female !== null ?
-                            <button onClick={() => {
-                                settings.gender === 'male' ? setSettings({...settings, gender: 'female'}) : setSettings({...settings, gender: 'male'})
-                            }}>Gender</button> :
-                            <button>Gender</button>
-                        }
-                        <button onClick={() => {
-                            setSettings({...settings, shiny: !settings.shiny})
-                        }}>Shiny</button>
+                <h1>#{idFormat(results.id)} {results.species.name}</h1>     
+                <div className='pokedex'>
+                    <div className='image'>                           
+                        {imageSelector(settings)}
+                        <div>
+                            {results.sprites.front_female !== null ? 
+                                <div onClick={() => {settings.gender === 'male' ? setSettings({...settings, gender: 'female'}) : setSettings({...settings, gender: 'male'})}}>
+                                    {genderSelector(settings.gender)}
+                                </div> :
+                                <div style={{color: 'gray'}}>&#9707;</div>
+                            }
+                            <div style={settings.shiny ? {color : 'gold'} : {color : 'gray'}} onClick={() => {
+                                setSettings({...settings, shiny: !settings.shiny})
+                            }}>&#10055;</div>
+                        </div>
                     </div>
+                    <div className='data'>
+                        <div className='type'>
+                            {results.types.map((elem: any) => <img src={helpers.getType(elem.type.name)} alt='' key={elem.type.name} /> )}
+                        </div>
+                        <div className='info'>
+                            <div>National &#8470;</div>
+                            <div>{idFormat(results.id)}</div>
+                            <div>Height</div>
+                            <div>{results.height * 10} cm</div>
+                            <div>Weight</div>
+                            <div>{results.weight / 10} kg</div>                        
+                            <div>Abilities</div>
+                            <div>{results.abilities.map((elem: any) => 
+                                elem.is_hidden ? <div><span>{elem.ability.name.replace('-', ' ')}</span> (hidden ability)</div> : 
+                                <div><span>{elem.ability.name.replace('-', ' ')}</span></div>
+                            )}
+                            </div>
+                        </div>
+                        <h2>Base Stats</h2>
+                        <div className='stats'>
+                            {results.stats.map((elem: any) => <div key={elem.stat.name}>
+                                <div>{elem.stat.name.replace('-', ' ')}</div>
+                                <div>{elem.base_stat}</div>
+                                <div className='bar' style={{width: `${elem.base_stat}px`}}/>
+                            </div>)}
+                        </div>
+                        <div>Evolution</div>                
+                        <div className='evolution'>                            
+                            <div>{evolution.chain.species.name}</div>
+                            {evolution.chain.evolves_to.length === 0 ? 
+                                <div></div> : 
+                                evolution.chain.evolves_to.map((elem: any) => 
+                                    <div>
+                                        <div>{elem.species.name}</div>
+                                        {elem.evolves_to.length === 0 ? <div></div> :
+                                            elem.evolves_to.map((elem: any) => 
+                                                <div>
+                                                    {elem.species.name}
+                                                </div> 
+                                            )
+                                        }
+                                    </div>
+                                )
+                            }  
+                        </div> 
+                        
+                    </div>
+                            
                 </div>
-                <div>
-                    <div>
-                        {results.types.map((elem: any) => <img src={helpers.getType(elem.type.name)} alt='' key={elem.type.name} /> )}
-                    </div>
-                    <div>
-                        <div>Height: {results.height * 10} cm</div>
-                        <div>Weight: {results.weight / 10} kg</div>
-                    </div>
-                    <div>
-                        <div>Evolution</div>
-                        <div>{evolution.chain.species.name}</div>
-                        {evolution.chain.evolves_to.length === 0 ? 
-                            <div></div> : 
-                            evolution.chain.evolves_to.map((elem: any) => 
-                                <div>
-                                    <div>{elem.species.name}</div>
-                                    {elem.evolves_to.length === 0 ? <div></div> :
-                                        elem.evolves_to.map((elem: any) => 
-                                            <div>
-                                                {elem.species.name}
-                                            </div> 
-                                        )
-                                    }
-                                </div>
-                            )
-                        }  
-                    </div> 
-                       
-                </div>
-                           
             </div>
             }
         </div>
